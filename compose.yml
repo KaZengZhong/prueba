@@ -1,0 +1,39 @@
+services:
+  # Frontend service
+  frontend:
+    image: franciscoxd1123/prestabanco-frontend:latest
+    networks:
+      - frontend-network
+    ports:
+      - "8070:80"
+
+  # Backend service
+  backend:
+    image: franciscoxd1123/prestabanco-backend:latest
+    environment:
+      - DB_HOST=postgres
+    networks:
+      - backend-network
+    ports:
+      - "8090:8090"
+
+  # PostgreSQL service
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: prestabanco  # Nombre de la base de datos
+      POSTGRES_USER: postgres      # Usuario de la base de datos
+      POSTGRES_PASSWORD: admin # Contraseña para el usuario
+    ports:
+      - "5433:5432"  # Expone el puerto 5432 para acceso externo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistencia de datos
+    networks:
+      - backend-network
+
+networks:
+  frontend-network:
+  backend-network:
+
+volumes:
+  postgres_data:
