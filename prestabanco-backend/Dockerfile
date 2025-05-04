@@ -1,4 +1,4 @@
-FROM openjdk:17
+FROM openjdk:25
 ARG JAR_FILE=target/prestabanco-backend.jar
 COPY ${JAR_FILE} prestabanco-backend.jar
 EXPOSE 8090
