@@ -29,6 +29,9 @@ class CreditEvaluationServiceTest {
     private SavingsEntity savings;
     private BigDecimal monthlyPayment;
 
+    // Definir constante para la contraseña de prueba
+    private static final String TEST_PASSWORD = System.getProperty("test.password", "test_pwd");
+
     @BeforeEach
     void setUp() {
         // Configurar usuario
@@ -38,7 +41,7 @@ class CreditEvaluationServiceTest {
         user.setFirstName("Juan");
         user.setLastName("Pérez");
         user.setEmail("juan.perez@email.com");
-        user.setPassword("password123");
+        user.setPassword(TEST_PASSWORD);
         user.setPhoneNumber("+56912345678");
         user.setAge(35);
         user.setRole(UserEntity.UserRole.CLIENT);
