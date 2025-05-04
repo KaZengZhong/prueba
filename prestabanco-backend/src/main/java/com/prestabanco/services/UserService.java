@@ -43,17 +43,26 @@ public class UserService {
     }
 
     public UserEntity updateUser(UserEntity user) {
-        // Verificar si la contraseña ha cambiado antes de cifrarla
-        Optional<UserEntity> existingUser = userRepository.findById(user.getId());
-        if (existingUser.isPresent()) {
-            if (!user.getPassword().equals(existingUser.get().getPassword())) {
-                // La contraseña ha cambiado, ciframos la nueva
+        Optional<UserEntity> existingUserOpt = userRepository.findById(user.getId());
+
+        if (existingUserOpt.isPresent()) {
+            UserEntity existingUser = existingUserOpt.get();
+
+            // Si el campo password contiene un valor (no es null ni vacío)
+            if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+                // Encriptamos la nueva contraseña siempre, no necesitamos comparar la antigua
                 user.setPassword(passwordEncoder.encode(user.getPassword()));
+            } else {
+                // Si no se está actualizando la contraseña, mantener la que ya existe
+                user.setPassword(existingUser.getPassword());
             }
         } else {
             // Si es un usuario nuevo, cifrar la contraseña
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            if (user.getPassword() != null) {
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
         }
+
         return userRepository.save(user);
     }
 
