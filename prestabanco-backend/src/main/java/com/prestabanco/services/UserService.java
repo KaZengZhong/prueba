@@ -46,7 +46,7 @@ public class UserService {
             });
         });
     }
-    
+
 
     public UserEntity createUser(UserEntity user) {
         // Cifrar la contraseña antes de guardarla

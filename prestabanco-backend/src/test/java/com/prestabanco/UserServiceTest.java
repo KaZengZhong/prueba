@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +30,9 @@ class UserServiceTest {
 
     private UserEntity testUser;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @BeforeEach
     void setUp() {
         testUser = new UserEntity();
@@ -37,7 +41,7 @@ class UserServiceTest {
         testUser.setFirstName("Juan");
         testUser.setLastName("Pérez");
         testUser.setEmail("juan.perez@email.com");
-        testUser.setPassword("password123");
+        testUser.setPassword("$2a$10$H.PGnIMG9jySmdRb2TrVpeaYF0Gg9DKrPJX.z7KU/G5RmcnHU3iQi");
         testUser.setPhoneNumber("+56912345678");
         testUser.setAge(30);
         testUser.setRole(UserEntity.UserRole.CLIENT);
@@ -45,6 +49,8 @@ class UserServiceTest {
 
     @Test
     void createUser_ShouldSaveAndReturnUser() {
+        // Configurar el mock para que cualquier contraseña se codifique como "encoded_password"
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
         when(userRepository.save(any(UserEntity.class))).thenReturn(testUser);
 
         UserEntity result = userService.createUser(testUser);
@@ -53,7 +59,10 @@ class UserServiceTest {
         assertEquals(testUser.getId(), result.getId());
         assertEquals(testUser.getEmail(), result.getEmail());
         assertEquals(testUser.getRut(), result.getRut());
-        verify(userRepository).save(testUser);
+
+        // Verificar que se llamó a encode con la contraseña cifrada
+        verify(passwordEncoder).encode("$2a$10$H.PGnIMG9jySmdRb2TrVpeaYF0Gg9DKrPJX.z7KU/G5RmcnHU3iQi");
+        verify(userRepository).save(any(UserEntity.class));
     }
 
     @Test
@@ -110,13 +119,15 @@ class UserServiceTest {
     @Test
     void updateUser_ShouldUpdateAndReturnUser() {
         testUser.setPhoneNumber("+56987654321");
+        when(passwordEncoder.encode(any(String.class))).thenReturn("encoded_password");
+        when(userRepository.findById(any(Long.class))).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(UserEntity.class))).thenReturn(testUser);
 
         UserEntity result = userService.updateUser(testUser);
 
         assertNotNull(result);
         assertEquals("+56987654321", result.getPhoneNumber());
-        verify(userRepository).save(testUser);
+        verify(userRepository).save(any(UserEntity.class));
     }
 
     @Test
@@ -149,6 +160,7 @@ class UserServiceTest {
     @Test
     void validateLogin_WhenValidCredentials_ShouldReturnUser() {
         when(userRepository.findByEmail("juan.perez@email.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("password123", testUser.getPassword())).thenReturn(true);
 
         UserEntity result = userService.validateLogin("juan.perez@email.com", "password123");
 
@@ -168,6 +180,7 @@ class UserServiceTest {
     @Test
     void validateLogin_WhenIncorrectPassword_ShouldThrowException() {
         when(userRepository.findByEmail("juan.perez@email.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("wrongpassword", testUser.getPassword())).thenReturn(false);
 
         assertThrows(RuntimeException.class, () ->
                 userService.validateLogin("juan.perez@email.com", "wrongpassword")
