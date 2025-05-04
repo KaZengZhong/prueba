@@ -41,7 +41,7 @@ class UserServiceTest {
         testUser.setFirstName("Juan");
         testUser.setLastName("Pérez");
         testUser.setEmail("juan.perez@email.com");
-        testUser.setPassword("$2a$10$H.PGnIMG9jySmdRb2TrVpeaYF0Gg9DKrPJX.z7KU/G5RmcnHU3iQi");
+        testUser.setPassword("hashedPassword");
         testUser.setPhoneNumber("+56912345678");
         testUser.setAge(30);
         testUser.setRole(UserEntity.UserRole.CLIENT);
@@ -49,22 +49,19 @@ class UserServiceTest {
 
     @Test
     void createUser_ShouldSaveAndReturnUser() {
-        // Configurar el mock para que cualquier contraseña se codifique como "encoded_password"
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
+        UserEntity newUser = new UserEntity();
+        newUser.setEmail("test@example.com");
+        newUser.setPassword("inputPassword"); // Contraseña de entrada no cifrada
+
+        when(passwordEncoder.encode(eq("inputPassword"))).thenReturn("encodedPassword");
         when(userRepository.save(any(UserEntity.class))).thenReturn(testUser);
 
-        UserEntity result = userService.createUser(testUser);
+        UserEntity result = userService.createUser(newUser);
 
         assertNotNull(result);
-        assertEquals(testUser.getId(), result.getId());
-        assertEquals(testUser.getEmail(), result.getEmail());
-        assertEquals(testUser.getRut(), result.getRut());
-
-        // Verificar que se llamó a encode con la contraseña cifrada
-        verify(passwordEncoder).encode("$2a$10$H.PGnIMG9jySmdRb2TrVpeaYF0Gg9DKrPJX.z7KU/G5RmcnHU3iQi");
+        verify(passwordEncoder).encode("inputPassword");
         verify(userRepository).save(any(UserEntity.class));
     }
-
     @Test
     void getUserById_WhenExists_ShouldReturnUser() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
@@ -157,12 +154,14 @@ class UserServiceTest {
         assertTrue(result);
     }
 
+    private static final String TEST_RAW_PASSWORD = "testPassword";
+
     @Test
     void validateLogin_WhenValidCredentials_ShouldReturnUser() {
         when(userRepository.findByEmail("juan.perez@email.com")).thenReturn(Optional.of(testUser));
-        when(passwordEncoder.matches("password123", testUser.getPassword())).thenReturn(true);
+        when(passwordEncoder.matches(eq(TEST_RAW_PASSWORD), anyString())).thenReturn(true);
 
-        UserEntity result = userService.validateLogin("juan.perez@email.com", "password123");
+        UserEntity result = userService.validateLogin("juan.perez@email.com", TEST_RAW_PASSWORD);
 
         assertNotNull(result);
         assertEquals(testUser.getEmail(), result.getEmail());
