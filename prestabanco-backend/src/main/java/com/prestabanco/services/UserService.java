@@ -2,8 +2,10 @@ package com.prestabanco.services;
 
 import com.prestabanco.entities.UserEntity;
 import com.prestabanco.repositories.UserRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -16,9 +18,35 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    // Crear un objeto BCryptPasswordEncoder para cifrar y verificar contraseñas
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    @Autowired
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @PostConstruct
+    public void updatePasswordHashes() {
+        // Mapa de usuarios conocidos y sus contraseñas
+        Map<String, String> knownUsers = Map.of(
+                "carlos.rodriguez@prestabanco.com", "admin123",
+                "juan.perez@email.com", "password123",
+                "maria.gonzalez@email.com", "password456",
+                "ana.silva@email.com", "password789",
+                "pedro.martinez@prestabanco.com", "exec123"
+        );
+
+        // Actualizar cada contraseña en la base de datos
+        knownUsers.forEach((email, password) -> {
+            userRepository.findByEmail(email).ifPresent(user -> {
+                user.setPassword(passwordEncoder.encode(password));
+                userRepository.save(user);
+                System.out.println("Contraseña actualizada para: " + email);
+            });
+        });
+    }
+    
 
     public UserEntity createUser(UserEntity user) {
         // Cifrar la contraseña antes de guardarla
@@ -82,25 +110,10 @@ public class UserService {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Define un mapa de contraseñas conocidas para los usuarios de prueba
-        Map<String, String> knownPasswords = new HashMap<>();
-        knownPasswords.put("juan.perez@email.com", "password123");
-        knownPasswords.put("maria.gonzalez@email.com", "password456");
-        knownPasswords.put("carlos.rodriguez@prestabanco.com", "admin123");
-        knownPasswords.put("ana.silva@email.com", "password789");
-        knownPasswords.put("pedro.martinez@prestabanco.com", "exec123");
-
-        // Si es un usuario conocido y la contraseña coincide con la conocida
-        if (knownPasswords.containsKey(email) && password.equals(knownPasswords.get(email))) {
-            return user;
-        }
-
-        // Si no es un usuario conocido o la contraseña no coincide, intentar con BCrypt
         if (passwordEncoder.matches(password, user.getPassword())) {
             return user;
         }
 
-        // Si ninguna verificación funciona
         throw new RuntimeException("Contraseña incorrecta");
     }
 }
