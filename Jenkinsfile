@@ -23,12 +23,12 @@ pipeline {
             }
         }
 
-        // Usando Snyk CLI directamente
+        // Usando Snyk CLI directamente con la nueva credencial string
         stage('Snyk Security Check - Backend') {
             steps {
                 script {
                     echo 'Running Snyk security analysis on backend code'
-                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
@@ -92,7 +92,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running Snyk container security analysis for backend'
-                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
@@ -126,7 +126,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running Snyk security analysis on frontend code'
-                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
@@ -184,39 +184,3 @@ pipeline {
                 }
             }
         }
-
-        // Usando Snyk CLI directamente para contenedores frontend
-        stage('Snyk Container Security - Frontend') {
-            steps {
-                script {
-                    echo 'Running Snyk container security analysis for frontend'
-                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
-                        if (isUnix()) {
-                            sh '''
-                                export SNYK_TOKEN=${SNYK_TOKEN}
-                                /usr/local/bin/snyk container test kahaozeng/prestabanco-frontend:latest --severity-threshold=high || true
-                            '''
-                        } else {
-                            bat '''
-                                set SNYK_TOKEN=%SNYK_TOKEN%
-                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe container test kahaozeng/prestabanco-frontend:latest --severity-threshold=high || true
-                            '''
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Deploy with Docker Compose') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh 'docker-compose up -d'
-                    } else {
-                        bat 'docker-compose up -d'
-                    }
-                }
-            }
-        }
-    }
-}
