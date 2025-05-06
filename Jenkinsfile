@@ -68,7 +68,7 @@ pipeline {
                         bat 'docker build -t kahaozeng/prestabanco-backend:latest prestabanco-backend'
                     }
                 }
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
                         if (isUnix()) {
                             sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
@@ -166,7 +166,7 @@ pipeline {
                         bat 'docker build -t kahaozeng/prestabanco-frontend:latest prestabanco-frontend'
                     }
                 }
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
                         if (isUnix()) {
                             sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
