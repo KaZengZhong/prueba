@@ -23,23 +23,25 @@ pipeline {
             }
         }
 
-        // Usando Snyk CLI directamente con la nueva credencial string
-        stage('Snyk Security Check - Backend') {
+        // Usando Snyk CLI exclusivamente para análisis de código (SAST) en backend
+        stage('Snyk SAST - Backend') {
             steps {
                 script {
-                    echo 'Running Snyk security analysis on backend code'
+                    echo 'Running Snyk SAST analysis on backend code'
                     withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
                                 cd prestabanco-backend
-                                /usr/local/bin/snyk test --all-projects --severity-threshold=high || true
+                                # Solo análisis de código (SAST)
+                                /usr/local/bin/snyk code test --severity-threshold=high || true
                             '''
                         } else {
                             bat '''
                                 set SNYK_TOKEN=%SNYK_TOKEN%
                                 cd prestabanco-backend
-                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --all-projects --severity-threshold=high || true
+                                REM Solo análisis de código (SAST)
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe code test --severity-threshold=high || true
                             '''
                         }
                     }
@@ -47,31 +49,33 @@ pipeline {
             }
         }
         
-        // Generación de reporte HTML para Backend
-        stage('Snyk HTML Report - Backend') {
+        // Generación de reporte HTML para Backend (solo código SAST)
+        stage('Snyk SAST Report - Backend') {
             steps {
                 script {
-                    echo 'Generating Snyk HTML report for Backend'
+                    echo 'Generating Snyk SAST HTML report for Backend'
                     withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
                                 cd prestabanco-backend
                                 mkdir -p reports
-                                /usr/local/bin/snyk test --json --severity-threshold=high > reports/snyk-output.json || true
-                                /usr/local/bin/snyk-to-html -i reports/snyk-output.json -o reports/snyk-backend-report.html || true
+                                # Reporte de código (SAST)
+                                /usr/local/bin/snyk code test --json --severity-threshold=high > reports/snyk-sast-output.json || true
+                                /usr/local/bin/snyk-to-html -i reports/snyk-sast-output.json -o reports/snyk-backend-sast-report.html || true
                             '''
                         } else {
                             bat '''
                                 set SNYK_TOKEN=%SNYK_TOKEN%
                                 cd prestabanco-backend
                                 mkdir -p reports
-                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --json --severity-threshold=high > reports\\snyk-output.json || true
-                                npx snyk-to-html -i reports\\snyk-output.json -o reports\\snyk-backend-report.html || true
+                                REM Reporte de código (SAST)
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe code test --json --severity-threshold=high > reports\\snyk-sast-output.json || true
+                                npx snyk-to-html -i reports\\snyk-sast-output.json -o reports\\snyk-backend-sast-report.html || true
                             '''
                         }
-                        // Archivar el reporte HTML como un artefacto
-                        archiveArtifacts artifacts: 'prestabanco-backend/reports/snyk-backend-report.html', allowEmptyArchive: true
+                        // Archivar el reporte HTML como artefacto
+                        archiveArtifacts artifacts: 'prestabanco-backend/reports/snyk-backend-sast-report.html', allowEmptyArchive: true
                     }
                 }
             }
@@ -150,23 +154,25 @@ pipeline {
             }
         }
 
-        // Usando Snyk CLI directamente para el frontend
-        stage('Snyk Security Check - Frontend') {
+        // Usando Snyk CLI exclusivamente para análisis de código (SAST) en frontend
+        stage('Snyk SAST - Frontend') {
             steps {
                 script {
-                    echo 'Running Snyk security analysis on frontend code'
+                    echo 'Running Snyk SAST analysis on frontend code'
                     withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
                                 cd prestabanco-frontend
-                                /usr/local/bin/snyk test --severity-threshold=high || true
+                                # Solo análisis de código (SAST)
+                                /usr/local/bin/snyk code test --severity-threshold=high || true
                             '''
                         } else {
                             bat '''
                                 set SNYK_TOKEN=%SNYK_TOKEN%
                                 cd prestabanco-frontend
-                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --severity-threshold=high || true
+                                REM Solo análisis de código (SAST)
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe code test --severity-threshold=high || true
                             '''
                         }
                     }
@@ -174,31 +180,33 @@ pipeline {
             }
         }
         
-        // Generación de reporte HTML para Frontend
-        stage('Snyk HTML Report - Frontend') {
+        // Generación de reporte HTML para Frontend (solo código SAST)
+        stage('Snyk SAST Report - Frontend') {
             steps {
                 script {
-                    echo 'Generating Snyk HTML report for Frontend'
+                    echo 'Generating Snyk SAST HTML report for Frontend'
                     withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
                                 cd prestabanco-frontend
                                 mkdir -p reports
-                                /usr/local/bin/snyk test --json --severity-threshold=high > reports/snyk-frontend-output.json || true
-                                /usr/local/bin/snyk-to-html -i reports/snyk-frontend-output.json -o reports/snyk-frontend-report.html || true
+                                # Reporte de código (SAST)
+                                /usr/local/bin/snyk code test --json --severity-threshold=high > reports/snyk-sast-output.json || true
+                                /usr/local/bin/snyk-to-html -i reports/snyk-sast-output.json -o reports/snyk-frontend-sast-report.html || true
                             '''
                         } else {
                             bat '''
                                 set SNYK_TOKEN=%SNYK_TOKEN%
                                 cd prestabanco-frontend
                                 mkdir -p reports
-                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --json --severity-threshold=high > reports\\snyk-frontend-output.json || true
-                                npx snyk-to-html -i reports\\snyk-frontend-output.json -o reports\\snyk-frontend-report.html || true
+                                REM Reporte de código (SAST)
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe code test --json --severity-threshold=high > reports\\snyk-sast-output.json || true
+                                npx snyk-to-html -i reports\\snyk-sast-output.json -o reports\\snyk-frontend-sast-report.html || true
                             '''
                         }
-                        // Archivar el reporte HTML como un artefacto
-                        archiveArtifacts artifacts: 'prestabanco-frontend/reports/snyk-frontend-report.html', allowEmptyArchive: true
+                        // Archivar el reporte HTML como artefacto
+                        archiveArtifacts artifacts: 'prestabanco-frontend/reports/snyk-frontend-sast-report.html', allowEmptyArchive: true
                     }
                 }
             }
