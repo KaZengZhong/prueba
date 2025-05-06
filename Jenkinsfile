@@ -1,8 +1,12 @@
 pipeline {
     agent any
     tools {
-        maven 'maven_3_9_6'
-        nodejs 'node'
+        maven 'maven'
+    }
+
+    environment {
+        // Definimos variables para Snyk
+        SNYK_TOKEN = credentials('snyk-api-token')
     }
 
     stages {
@@ -24,6 +28,24 @@ pipeline {
             }
         }
 
+        // Añadimos stage para análisis Snyk del backend
+        stage('Snyk Security Check - Backend') {
+            steps {
+                script {
+                    echo 'Running Snyk security analysis on backend code'
+                    withCredentials([string(credentialsId: 'snyk-api-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh 'cd prestabanco-backend && snyk test --all-projects --severity-threshold=high || true'
+                            sh 'cd prestabanco-backend && snyk monitor --all-projects || true'
+                        } else {
+                            bat 'cd prestabanco-backend && snyk test --all-projects --severity-threshold=high || true'
+                            bat 'cd prestabanco-backend && snyk monitor --all-projects || true'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Test backend') {
             steps {
                 script {
@@ -31,20 +53,6 @@ pipeline {
                         sh 'cd prestabanco-backend && ./mvnw test'
                     } else {
                         bat 'cd prestabanco-backend && mvnw test'
-                    }
-                }
-            }
-        }
-
-        stage('SonarQube analysis backend') {
-            steps {
-                withSonarQubeEnv('SonarQube_Server') {
-                    script {
-                        if (isUnix()) {
-                            sh 'cd prestabanco-backend && ./mvnw clean verify sonar:sonar'
-                        } else {
-                            bat 'cd prestabanco-backend && mvnw clean verify sonar:sonar'
-                        }
                     }
                 }
             }
@@ -78,6 +86,24 @@ pipeline {
             }
         }
 
+        // Añadimos stage para escanear la imagen de Docker del backend
+        stage('Snyk Container Security - Backend') {
+            steps {
+                script {
+                    echo 'Running Snyk container security analysis for backend'
+                    withCredentials([string(credentialsId: 'snyk-api-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh 'snyk container test franciscoxd1123/prestabanco-backend:latest --severity-threshold=high || true'
+                            sh 'snyk container monitor franciscoxd1123/prestabanco-backend:latest || true'
+                        } else {
+                            bat 'snyk container test franciscoxd1123/prestabanco-backend:latest --severity-threshold=high || true'
+                            bat 'snyk container monitor franciscoxd1123/prestabanco-frontend:latest || true'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Install frontend dependencies') {
             steps {
                 script {
@@ -90,13 +116,19 @@ pipeline {
             }
         }
 
-        stage('Install SonarQube Scanner') {
+        // Añadimos stage para análisis Snyk del frontend
+        stage('Snyk Security Check - Frontend') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'cd prestabanco-frontend && npm install -g sonar-scanner'
-                    } else {
-                        bat 'cd prestabanco-frontend && npm install -g sonar-scanner'
+                    echo 'Running Snyk security analysis on frontend code'
+                    withCredentials([string(credentialsId: 'snyk-api-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh 'cd prestabanco-frontend && snyk test --severity-threshold=high || true'
+                            sh 'cd prestabanco-frontend && snyk monitor || true'
+                        } else {
+                            bat 'cd prestabanco-frontend && snyk test --severity-threshold=high || true'
+                            bat 'cd prestabanco-frontend && snyk monitor || true'
+                        }
                     }
                 }
             }
@@ -109,36 +141,6 @@ pipeline {
                         sh 'cd prestabanco-frontend && npm run build'
                     } else {
                         bat 'cd prestabanco-frontend && npm run build'
-                    }
-                }
-            }
-        }
-
-        stage('SonarQube analysis frontend') {
-            steps {
-                withSonarQubeEnv('SonarQube_Server') {
-                    script {
-                        if (isUnix()) {
-                            sh '''
-                                cd prestabanco-frontend
-                                sonar-scanner \
-                                -Dsonar.projectKey=prestabanco-frontend \
-                                -Dsonar.sources=src \
-                                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                                -Dsonar.host.url=$SONAR_HOST_URL \
-                                -Dsonar.login=$SONAR_AUTH_TOKEN
-                            '''
-                        } else {
-                            bat '''
-                                cd prestabanco-frontend
-                                sonar-scanner ^
-                                -Dsonar.projectKey=prestabanco-frontend ^
-                                -Dsonar.sources=src ^
-                                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info ^
-                                -Dsonar.host.url=%SONAR_HOST_URL% ^
-                                -Dsonar.login=%SONAR_AUTH_TOKEN%
-                            '''
-                        }
                     }
                 }
             }
@@ -167,6 +169,24 @@ pipeline {
                         sh 'docker push franciscoxd1123/prestabanco-frontend:latest'
                     } else {
                         bat 'docker push franciscoxd1123/prestabanco-frontend:latest'
+                    }
+                }
+            }
+        }
+
+        // Añadimos stage para escanear la imagen de Docker del frontend
+        stage('Snyk Container Security - Frontend') {
+            steps {
+                script {
+                    echo 'Running Snyk container security analysis for frontend'
+                    withCredentials([string(credentialsId: 'snyk-api-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh 'snyk container test franciscoxd1123/prestabanco-frontend:latest --severity-threshold=high || true'
+                            sh 'snyk container monitor franciscoxd1123/prestabanco-frontend:latest || true'
+                        } else {
+                            bat 'snyk container test franciscoxd1123/prestabanco-frontend:latest --severity-threshold=high || true'
+                            bat 'snyk container monitor franciscoxd1123/prestabanco-frontend:latest || true'
+                        }
                     }
                 }
             }
