@@ -23,19 +23,26 @@ pipeline {
             }
         }
 
-        // Versión simplificada para Snyk
+        // Usando Snyk CLI directamente
         stage('Snyk Security Check - Backend') {
             steps {
                 script {
                     echo 'Running Snyk security analysis on backend code'
-                    snykSecurity(
-                        snykInstallation: 'snyk@latest',
-                        snykTokenId: 'snyk-token',
-                        targetFile: 'prestabanco-backend/pom.xml',
-                        additionalArguments: '--all-projects --severity-threshold=high',
-                        failOnIssues: false
-                        // Eliminamos monitorOnBuild ya que no es compatible
-                    )
+                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh '''
+                                export SNYK_TOKEN=${SNYK_TOKEN}
+                                cd prestabanco-backend
+                                /usr/local/bin/snyk test --all-projects --severity-threshold=high || true
+                            '''
+                        } else {
+                            bat '''
+                                set SNYK_TOKEN=%SNYK_TOKEN%
+                                cd prestabanco-backend
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --all-projects --severity-threshold=high || true
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -80,18 +87,24 @@ pipeline {
             }
         }
 
-        // Versión simplificada para Snyk
+        // Usando Snyk CLI directamente para contenedores
         stage('Snyk Container Security - Backend') {
             steps {
                 script {
                     echo 'Running Snyk container security analysis for backend'
-                    snykSecurity(
-                        snykInstallation: 'snyk@latest',
-                        snykTokenId: 'snyk-token',
-                        targetFile: 'prestabanco-backend/Dockerfile',
-                        additionalArguments: '--docker kahaozeng/prestabanco-backend:latest --severity-threshold=high',
-                        failOnIssues: false
-                    )
+                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh '''
+                                export SNYK_TOKEN=${SNYK_TOKEN}
+                                /usr/local/bin/snyk container test kahaozeng/prestabanco-backend:latest --severity-threshold=high || true
+                            '''
+                        } else {
+                            bat '''
+                                set SNYK_TOKEN=%SNYK_TOKEN%
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe container test kahaozeng/prestabanco-backend:latest --severity-threshold=high || true
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -108,18 +121,26 @@ pipeline {
             }
         }
 
-        // Versión simplificada para Snyk
+        // Usando Snyk CLI directamente para el frontend
         stage('Snyk Security Check - Frontend') {
             steps {
                 script {
                     echo 'Running Snyk security analysis on frontend code'
-                    snykSecurity(
-                        snykInstallation: 'snyk@latest',
-                        snykTokenId: 'snyk-token',
-                        targetFile: 'prestabanco-frontend/package.json',
-                        additionalArguments: '--severity-threshold=high',
-                        failOnIssues: false
-                    )
+                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh '''
+                                export SNYK_TOKEN=${SNYK_TOKEN}
+                                cd prestabanco-frontend
+                                /usr/local/bin/snyk test --severity-threshold=high || true
+                            '''
+                        } else {
+                            bat '''
+                                set SNYK_TOKEN=%SNYK_TOKEN%
+                                cd prestabanco-frontend
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --severity-threshold=high || true
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -164,18 +185,24 @@ pipeline {
             }
         }
 
-        // Versión simplificada para Snyk
+        // Usando Snyk CLI directamente para contenedores frontend
         stage('Snyk Container Security - Frontend') {
             steps {
                 script {
                     echo 'Running Snyk container security analysis for frontend'
-                    snykSecurity(
-                        snykInstallation: 'snyk@latest',
-                        snykTokenId: 'snyk-token',
-                        targetFile: 'prestabanco-frontend/Dockerfile',
-                        additionalArguments: '--docker kahaozeng/prestabanco-frontend:latest --severity-threshold=high',
-                        failOnIssues: false
-                    )
+                    withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh '''
+                                export SNYK_TOKEN=${SNYK_TOKEN}
+                                /usr/local/bin/snyk container test kahaozeng/prestabanco-frontend:latest --severity-threshold=high || true
+                            '''
+                        } else {
+                            bat '''
+                                set SNYK_TOKEN=%SNYK_TOKEN%
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe container test kahaozeng/prestabanco-frontend:latest --severity-threshold=high || true
+                            '''
+                        }
+                    }
                 }
             }
         }
