@@ -1,7 +1,7 @@
 services:
   # Frontend service
   frontend:
-    image: franciscoxd1123/prestabanco-frontend:latest
+    image: kahaozeng/prestabanco-frontend:latest
     networks:
       - frontend-network
     ports:
@@ -9,7 +9,7 @@ services:
 
   # Backend service
   backend:
-    image: franciscoxd1123/prestabanco-backend:latest
+    image: kahaozeng/prestabanco-backend:latest
     environment:
       - DB_HOST=postgres
     networks:
