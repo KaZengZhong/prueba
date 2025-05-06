@@ -6,7 +6,7 @@ pipeline {
 
     environment {
         // Definimos variables para Snyk
-        SNYK_TOKEN = credentials('snyk-api-token')
+        SNYK_TOKEN = credentials('snyk-token')
     }
 
     stages {
