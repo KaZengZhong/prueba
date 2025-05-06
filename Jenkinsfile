@@ -23,7 +23,7 @@ pipeline {
             }
         }
 
-        // Usando Snyk CLI directamente con la credencial string
+        // Usando Snyk CLI directamente con la nueva credencial string
         stage('Snyk Security Check - Backend') {
             steps {
                 script {
@@ -47,35 +47,36 @@ pipeline {
             }
         }
         
-        // Generación de reporte JSON para Backend
-        stage('Snyk JSON Report - Backend') {
+        // Generación de reporte HTML para Backend
+        stage('Snyk HTML Report - Backend') {
             steps {
                 script {
-                    echo 'Generating Snyk JSON report for Backend'
+                    echo 'Generating Snyk HTML report for Backend'
                     withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
                                 cd prestabanco-backend
                                 mkdir -p reports
-                                /usr/local/bin/snyk test --json --severity-threshold=high > reports/snyk-backend.json || true
+                                /usr/local/bin/snyk test --json --severity-threshold=high > reports/snyk-output.json || true
+                                /usr/local/bin/snyk-to-html -i reports/snyk-output.json -o reports/snyk-backend-report.html || true
                             '''
                         } else {
                             bat '''
                                 set SNYK_TOKEN=%SNYK_TOKEN%
                                 cd prestabanco-backend
                                 mkdir -p reports
-                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --json --severity-threshold=high > reports\\snyk-backend.json || true
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --json --severity-threshold=high > reports\\snyk-output.json || true
+                                npx snyk-to-html -i reports\\snyk-output.json -o reports\\snyk-backend-report.html || true
                             '''
                         }
-                        // Archivar el reporte JSON como un artefacto
-                        archiveArtifacts artifacts: 'prestabanco-backend/reports/snyk-backend.json', allowEmptyArchive: true
+                        // Archivar el reporte HTML como un artefacto
+                        archiveArtifacts artifacts: 'prestabanco-backend/reports/snyk-backend-report.html', allowEmptyArchive: true
                     }
                 }
             }
         }
 
-        // El resto de etapas con sus respectivos reportes JSON...
         stage('Test backend') {
             steps {
                 script {
@@ -98,6 +99,7 @@ pipeline {
                             bat 'docker build -t kahaozeng/prestabanco-backend:latest prestabanco-backend'
                         }
                         
+                        // Usar credenciales de Docker correctas
                         withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                             if (isUnix()) {
                                 sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
@@ -114,6 +116,7 @@ pipeline {
             }
         }
 
+        // Usando Snyk CLI directamente para contenedores
         stage('Snyk Container Security - Backend') {
             steps {
                 script {
@@ -134,36 +137,148 @@ pipeline {
                 }
             }
         }
-        
-        // Generación de reporte JSON para Container Backend
-        stage('Snyk JSON Report - Container Backend') {
+
+        stage('Install frontend dependencies') {
             steps {
                 script {
-                    echo 'Generating Snyk JSON report for Container Backend'
+                    if (isUnix()) {
+                        sh 'cd prestabanco-frontend && npm install'
+                    } else {
+                        bat 'cd prestabanco-frontend && npm install'
+                    }
+                }
+            }
+        }
+
+        // Usando Snyk CLI directamente para el frontend
+        stage('Snyk Security Check - Frontend') {
+            steps {
+                script {
+                    echo 'Running Snyk security analysis on frontend code'
                     withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
                         if (isUnix()) {
                             sh '''
                                 export SNYK_TOKEN=${SNYK_TOKEN}
-                                mkdir -p container-reports
-                                /usr/local/bin/snyk container test kahaozeng/prestabanco-backend:latest --json --severity-threshold=high > container-reports/snyk-container-backend.json || true
+                                cd prestabanco-frontend
+                                /usr/local/bin/snyk test --severity-threshold=high || true
                             '''
                         } else {
                             bat '''
                                 set SNYK_TOKEN=%SNYK_TOKEN%
-                                mkdir -p container-reports
-                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe container test kahaozeng/prestabanco-backend:latest --json --severity-threshold=high > container-reports\\snyk-container-backend.json || true
+                                cd prestabanco-frontend
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --severity-threshold=high || true
                             '''
                         }
-                        // Archivar el reporte JSON como un artefacto
-                        archiveArtifacts artifacts: 'container-reports/snyk-container-backend.json', allowEmptyArchive: true
                     }
                 }
             }
         }
         
-        // ... Continúa con el resto de etapas similarmente
-        
-        // Para Frontend y Container Frontend
-        // ... [etapas omitidas para brevedad]
+        // Generación de reporte HTML para Frontend
+        stage('Snyk HTML Report - Frontend') {
+            steps {
+                script {
+                    echo 'Generating Snyk HTML report for Frontend'
+                    withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh '''
+                                export SNYK_TOKEN=${SNYK_TOKEN}
+                                cd prestabanco-frontend
+                                mkdir -p reports
+                                /usr/local/bin/snyk test --json --severity-threshold=high > reports/snyk-frontend-output.json || true
+                                /usr/local/bin/snyk-to-html -i reports/snyk-frontend-output.json -o reports/snyk-frontend-report.html || true
+                            '''
+                        } else {
+                            bat '''
+                                set SNYK_TOKEN=%SNYK_TOKEN%
+                                cd prestabanco-frontend
+                                mkdir -p reports
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe test --json --severity-threshold=high > reports\\snyk-frontend-output.json || true
+                                npx snyk-to-html -i reports\\snyk-frontend-output.json -o reports\\snyk-frontend-report.html || true
+                            '''
+                        }
+                        // Archivar el reporte HTML como un artefacto
+                        archiveArtifacts artifacts: 'prestabanco-frontend/reports/snyk-frontend-report.html', allowEmptyArchive: true
+                    }
+                }
+            }
+        }
+
+        stage('Build frontend') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'cd prestabanco-frontend && npm run build'
+                    } else {
+                        bat 'cd prestabanco-frontend && npm run build'
+                    }
+                }
+            }
+        }
+
+        stage('Push frontend') {
+            steps {
+                script {
+                    try {
+                        if (isUnix()) {
+                            sh 'docker build -t kahaozeng/prestabanco-frontend:latest prestabanco-frontend'
+                        } else {
+                            bat 'docker build -t kahaozeng/prestabanco-frontend:latest prestabanco-frontend'
+                        }
+                        
+                        // Usar credenciales de Docker correctas
+                        withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                            if (isUnix()) {
+                                sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                                sh 'docker push kahaozeng/prestabanco-frontend:latest'
+                            } else {
+                                bat 'docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%'
+                                bat 'docker push kahaozeng/prestabanco-frontend:latest'
+                            }
+                        }
+                    } catch (Exception e) {
+                        echo "Warning: Could not push Docker image. Continuing pipeline. Error: ${e.message}"
+                    }
+                }
+            }
+        }
+
+        // Usando Snyk CLI directamente para contenedores frontend
+        stage('Snyk Container Security - Frontend') {
+            steps {
+                script {
+                    echo 'Running Snyk container security analysis for frontend'
+                    withCredentials([string(credentialsId: 'snyk-token-string', variable: 'SNYK_TOKEN')]) {
+                        if (isUnix()) {
+                            sh '''
+                                export SNYK_TOKEN=${SNYK_TOKEN}
+                                /usr/local/bin/snyk container test kahaozeng/prestabanco-frontend:latest --severity-threshold=high || true
+                            '''
+                        } else {
+                            bat '''
+                                set SNYK_TOKEN=%SNYK_TOKEN%
+                                C:\\Users\\kahao\\.jenkins\\tools\\io.snyk.jenkins.tools.SnykInstallation\\snyk_latest\\snyk-win.exe container test kahaozeng/prestabanco-frontend:latest --severity-threshold=high || true
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy with Docker Compose') {
+            steps {
+                script {
+                    try {
+                        if (isUnix()) {
+                            sh 'docker-compose up -d'
+                        } else {
+                            bat 'docker-compose up -d'
+                        }
+                    } catch (Exception e) {
+                        echo "Warning: Could not deploy with Docker Compose. Error: ${e.message}"
+                    }
+                }
+            }
+        }
     }
 }
